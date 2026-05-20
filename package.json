@@ -1,0 +1,14 @@
+{
+  "name": "doimus-cloudedge",
+  "version": "1.0.0",
+  "description": "Doimus plugin for CloudEdge/Meari cameras — ieGeek, DEKCO, ZUMIMALL, ANRAN, Cooau, MUBVIEW, Arenti, and more",
+  "license": "MIT",
+  "author": "Matteo Crippa",
+  "main": "index.js",
+  "doimus": {
+    "type": "native"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  }
+}

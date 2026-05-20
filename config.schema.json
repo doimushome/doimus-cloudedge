@@ -1,0 +1,84 @@
+{
+  "pluginAlias": "doimus-cloudedge",
+  "pluginType": "native",
+  "singular": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "title": "Email",
+        "type": "string",
+        "required": true,
+        "format": "email",
+        "placeholder": "account@example.com",
+        "description": "Account email used with CloudEdge/Meari app"
+      },
+      "password": {
+        "title": "Password",
+        "type": "string",
+        "required": true,
+        "format": "password",
+        "description": "Account password"
+      },
+      "region": {
+        "title": "Region",
+        "type": "string",
+        "required": true,
+        "default": "eu",
+        "oneOf": [
+          { "title": "Europe (EU)", "enum": ["eu"] },
+          { "title": "United States (US)", "enum": ["us"] },
+          { "title": "China (CN)", "enum": ["cn"] },
+          { "title": "Other (OT)", "enum": ["ot"] }
+        ],
+        "description": "Select the region matching your account"
+      },
+      "pushSwitches": {
+        "title": "Push Notification Switches",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "deviceId": {
+              "title": "Device ID",
+              "type": "string",
+              "description": "Device ID to control push notifications for"
+            },
+            "enabled": {
+              "title": "Enabled",
+              "type": "boolean",
+              "default": false,
+              "description": "Enable or disable push notifications"
+            }
+          }
+        }
+      },
+      "pollInterval": {
+        "title": "Poll Interval (seconds)",
+        "type": "integer",
+        "minimum": 5,
+        "maximum": 300,
+        "default": 30,
+        "description": "How often to poll device status (5-300 seconds)"
+      }
+    }
+  },
+  "form": [
+    {
+      "type": "help",
+      "helpText": "Supports CloudEdge/Meari SDK cameras from: ieGeek, DEKCO, ZUMIMALL, ANRAN, Cooau, MUBVIEW, Arenti, Wansview, Laxihub, Galayou, and more."
+    },
+    "email",
+    "password",
+    "region",
+    {
+      "key": "pushSwitches",
+      "type": "array",
+      "items": [
+        "pushSwitches[].deviceId",
+        "pushSwitches[].enabled"
+      ]
+    },
+    "pollInterval"
+  ]
+}
