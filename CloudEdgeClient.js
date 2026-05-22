@@ -169,6 +169,14 @@ class CloudEdgeClient {
     return response.data;
   }
 
+  async getSnapshot(deviceId) {
+    const response = await this._request("GET", "/openapi/device/snapshot", { device_id: deviceId });
+    if (response.data?.snapshot) {
+      return Buffer.from(response.data.snapshot, "base64");
+    }
+    return null;
+  }
+
   async refreshAccessToken() {
     if (!this.refreshToken) {
       return this.login();

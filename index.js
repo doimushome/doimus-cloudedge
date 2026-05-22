@@ -36,8 +36,18 @@ module.exports = {
     syncDevices(cfg, api).catch((e) => api.log("error", `Initial sync error: ${e.message}`));
 
     const intervalMs = (cfg.pollInterval || 30) * 1000;
-    pollTimer = setInterval(() => {
-      syncDevices(cfg, api).catch((e) => api.log("error", `Periodic sync error: ${e.message}`));
+    pollTimer = setInterval(async () => {
+      try {
+        await syncDevices(cfg, api);
+        for (const [did] of devices) {
+          try {
+            const frame = await client.getSnapshot(did);
+            if (frame) api.sendMjpegFrame(did, "main", frame.toString("base64"));
+          } catch (_) { /* snapshot best-effort */ }
+        }
+      } catch (e) {
+        api.log("error", `Periodic sync error: ${e.message}`);
+      }
     }, intervalMs);
     if (pollTimer.unref) pollTimer.unref();
   },
