@@ -7,7 +7,11 @@ let pollTimer = null;
 function makeDeviceId(device) {
   const crypto = require("crypto");
   if (device.device_id) return `cloudedge-${device.device_id}`;
-  const hash = crypto.createHash("sha256").update(device.device_name || "").digest("hex").slice(0, 16);
+  const hash = crypto
+    .createHash("sha256")
+    .update(device.device_name || "")
+    .digest("hex")
+    .slice(0, 16);
   return `cloudedge-${hash}`;
 }
 
@@ -33,7 +37,9 @@ module.exports = {
       }
     });
 
-    syncDevices(cfg, api).catch((e) => api.log("error", `Initial sync error: ${e.message}`));
+    syncDevices(cfg, api).catch((e) =>
+      api.log("error", `Initial sync error: ${e.message}`),
+    );
 
     const intervalMs = (cfg.pollInterval || 30) * 1000;
     pollTimer = setInterval(async () => {
@@ -42,8 +48,10 @@ module.exports = {
         for (const [did] of devices) {
           try {
             const frame = await client.getSnapshot(did);
-            if (frame) api.sendMjpegFrame(did, "main", frame.toString("base64"));
-          } catch (_) { /* snapshot best-effort */ }
+            if (frame) api.sendMjpegFrame(did, "main", frame);
+          } catch (_) {
+            /* snapshot best-effort */
+          }
         }
       } catch (e) {
         api.log("error", `Periodic sync error: ${e.message}`);
@@ -72,7 +80,9 @@ async function syncDevices(cfg, api) {
     seen.add(did);
 
     const caps = ["online"];
-    const state = { online: device.online_status === 1 || device.is_online === true };
+    const state = {
+      online: device.online_status === 1 || device.is_online === true,
+    };
 
     if (device.battery_percentage !== undefined) {
       caps.push("battery", "battery_low");
@@ -93,7 +103,10 @@ async function syncDevices(cfg, api) {
         capabilities: caps,
         state,
       });
-      api.log("info", `Registered camera: ${device.device_name || device.device_id}`);
+      api.log(
+        "info",
+        `Registered camera: ${device.device_name || device.device_id}`,
+      );
     }
 
     devices.set(did, { raw: device });
