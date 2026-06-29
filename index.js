@@ -3,6 +3,7 @@ const CloudEdgeClient = require("./CloudEdgeClient");
 let client = null;
 let devices = new Map();
 let pollTimer = null;
+let savedApi = null;
 
 function makeDeviceId(device) {
   const crypto = require("crypto");
@@ -17,6 +18,7 @@ function makeDeviceId(device) {
 
 module.exports = {
   start(cfg, api) {
+    savedApi = api;
     client = new CloudEdgeClient({
       email: cfg.email,
       password: cfg.password,
@@ -58,6 +60,11 @@ module.exports = {
       }
     }, intervalMs);
     if (pollTimer.unref) pollTimer.unref();
+  },
+
+  setConfig(cfg) {
+    this.stop();
+    this.start(cfg, savedApi);
   },
 
   stop() {
