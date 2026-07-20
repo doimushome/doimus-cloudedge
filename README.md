@@ -63,10 +63,34 @@ npm install
 ## Features
 
 - **Device discovery** — automatically finds all cameras linked to your account
+- **Snapshot capture** — periodic JPEG snapshots stored in image history
+- **Live view** — RTSP → MJPEG relay for real-time camera streaming in the mobile app
 - **Push notification control** — enable/disable motion alerts per device
-- **Live stream URLs** — retrieve RTSP/FLV stream URLs for camera feeds
 - **Device status** — monitor online status, battery level, and WiFi signal
 - **Parameter control** — send device-specific commands (PTZ, settings, etc.)
+
+### Device Capabilities
+
+| Capability | Description |
+|---|---|
+| `online` | `true` when camera is online |
+| `battery` | Battery percentage (0-100) |
+| `battery_low` | `true` when battery < 20% |
+| `on` | Push notification toggle (if pushSwitches configured) |
+| `p2p_start` | Start live view (RTSP → MJPEG relay via ffmpeg) |
+| `p2p_stop` | Stop live view |
+
+### Live View
+
+The mobile app sends `p2p_start`/`p2p_stop` commands to start/stop a live video stream:
+- **Start**: Plugin calls the CloudEdge API to retrieve the RTSP stream URL, then spawns `ffmpeg` to pull the RTSP stream and push MJPEG frames
+- **Stop**: Plugin kills the ffmpeg process
+
+**Requirements**: `ffmpeg` must be installed on the host running Doimus. On Orange Pi / Raspberry Pi:
+
+```bash
+sudo apt install ffmpeg
+```
 
 ## API Reference
 
