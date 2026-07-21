@@ -1,9 +1,14 @@
 const CloudEdgeClient = require("./CloudEdgeClient");
 
+function createLogger(api, prefix) {
+  return (level, msg) => api.log(level, `[${prefix}] ${msg}`);
+}
+
 let client = null;
 let devices = new Map();
 let pollTimer = null;
 let savedApi = null;
+let log = null;
 // Live view: deviceId → ffmpeg child process
 let liveViewProcesses = new Map();
 
@@ -28,7 +33,7 @@ function makeDeviceId(device) {
 // ── RTSP → MJPEG relay for live view (p2p_start / p2p_stop) ───────────
 async function startLiveView(did, rawDeviceId, api) {
   if (liveViewProcesses.has(did)) {
-    api.log("debug", `Live view already active for ${did}`);
+    log("debug", `Live view already active for ${did}`);
     return;
   }
 
@@ -37,19 +42,19 @@ async function startLiveView(did, rawDeviceId, api) {
     const streamUrl = videoData?.url || videoData?.rtsp_url;
 
     if (!streamUrl) {
-      api.log("error", `No stream URL returned for ${did}`);
+      log("error", `No stream URL returned for ${did}`);
       return;
     }
 
     if (!streamUrl.startsWith("rtsp://")) {
-      api.log(
+      log(
         "error",
         `Unsupported stream URL format for ${did}: ${streamUrl}`,
       );
       return;
     }
 
-    api.log("info", `Starting live view for ${did}`);
+    log("info", `Starting live view for ${did}`);
 
     const { spawn } = require("child_process");
     const proc = spawn(
@@ -99,25 +104,25 @@ async function startLiveView(did, rawDeviceId, api) {
     });
 
     proc.on("error", (err) => {
-      api.log("error", `Live view ffmpeg error for ${did}: ${err.message}`);
+      log("error", `Live view ffmpeg error for ${did}: ${err.message}`);
       liveViewProcesses.delete(did);
     });
 
     proc.on("close", (code) => {
-      api.log("info", `Live view stopped for ${did} (code=${code})`);
+      log("info", `Live view stopped for ${did} (code=${code})`);
       liveViewProcesses.delete(did);
     });
 
     liveViewProcesses.set(did, proc);
   } catch (e) {
-    api.log("error", `Failed to start live view for ${did}: ${e.message}`);
+    log("error", `Failed to start live view for ${did}: ${e.message}`);
   }
 }
 
 function stopLiveView(did, api) {
   const proc = liveViewProcesses.get(did);
   if (!proc) return;
-  api.log("info", `Stopping live view for ${did}`);
+  log("info", `Stopping live view for ${did}`);
   try {
     proc.kill("SIGTERM");
   } catch (_) {}
@@ -127,6 +132,7 @@ function stopLiveView(did, api) {
 module.exports = {
   start(cfg, api) {
     savedApi = api;
+    log = createLogger(api, "CloudEdge");
     client = new CloudEdgeClient({
       email: cfg.email,
       password: cfg.password,
@@ -157,12 +163,12 @@ module.exports = {
           }
         }
       } catch (e) {
-        api.log("error", `Command failed for ${deviceId}: ${e.message}`);
+        log("error", `Command failed for ${deviceId}: ${e.message}`);
       }
     });
 
     syncDevices(cfg, api).catch((e) =>
-      api.log("error", `Initial sync error: ${e.message}`),
+      log("error", `Initial sync error: ${e.message}`),
     );
 
     const intervalMs = (cfg.pollInterval || 30) * 1000;
@@ -188,7 +194,7 @@ module.exports = {
           }
         }
       } catch (e) {
-        api.log("error", `Periodic sync error: ${e.message}`);
+        log("error", `Periodic sync error: ${e.message}`);
       }
     }, intervalMs);
     if (pollTimer.unref) pollTimer.unref();
@@ -246,7 +252,7 @@ async function syncDevices(cfg, api) {
         capabilities: caps,
         state,
       });
-      api.log(
+      log(
         "info",
         `Registered camera: ${device.device_name || device.device_id}`,
       );
@@ -259,7 +265,7 @@ async function syncDevices(cfg, api) {
   for (const [did] of devices) {
     if (!seen.has(did)) {
       devices.delete(did);
-      api.log("info", `Removed stale device: ${did}`);
+      log("info", `Removed stale device: ${did}`);
     }
   }
 }
