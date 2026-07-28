@@ -9,6 +9,7 @@ let devices = new Map();
 let pollTimer = null;
 let savedApi = null;
 let log = null;
+let syncing = false;
 // Live view: deviceId → ffmpeg child process
 let liveViewProcesses = new Map();
 
@@ -81,10 +82,16 @@ async function startLiveView(did, rawDeviceId, api) {
     const SOI = Buffer.from([0xff, 0xd8]);
     const EOI = Buffer.from([0xff, 0xd9]);
 
-    proc.stderr.on("data", () => {});
+    proc.stderr.on("data", (data) => {
+      log("debug", "ffmpeg: " + data.toString());
+    });
 
     proc.stdout.on("data", (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
+      if (buffer.length > 10 * 1024 * 1024) {
+        log("warn", "Live view buffer overflow, resetting");
+        buffer = Buffer.alloc(0);
+      }
 
       while (true) {
         const soiIdx = buffer.indexOf(SOI);
@@ -173,6 +180,8 @@ module.exports = {
 
     const intervalMs = (cfg.pollInterval || 30) * 1000;
     pollTimer = setInterval(async () => {
+      if (syncing) return;
+      syncing = true;
       try {
         await syncDevices(cfg, api);
         for (const [did] of devices) {
@@ -193,8 +202,8 @@ module.exports = {
             /* snapshot best-effort */
           }
         }
-      } catch (e) {
-        log("error", `Periodic sync error: ${e.message}`);
+      } finally {
+        syncing = false;
       }
     }, intervalMs);
     if (pollTimer.unref) pollTimer.unref();
